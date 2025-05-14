@@ -16,6 +16,10 @@ class CustomSurfaceView(context: Context, attributeSet: AttributeSet) :
     private var drawThread: DrawThread? = null
     private lateinit var graph: Graph
 
+    var bfsSteps: List<Int> = emptyList()
+    var bfsStepIndex = 0
+    val visitedInOrder = mutableSetOf<Int>()
+
     init {
         holder.addCallback(this)
     }
@@ -35,6 +39,12 @@ class CustomSurfaceView(context: Context, attributeSet: AttributeSet) :
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         drawThread?.running = false
         drawThread?.join()
+    }
+
+    fun startBfsAnimation(startNodeId: Int) {
+        bfsSteps = graph.bfs(startNodeId)
+        bfsStepIndex = 0
+        visitedInOrder.clear()
     }
 
     fun drawGraph(canvas: Canvas) {
@@ -58,7 +68,7 @@ class CustomSurfaceView(context: Context, attributeSet: AttributeSet) :
         }
 
         for ((id, node) in graph.nodes) {
-            paint.color = Color.LTGRAY
+            paint.color = if (id in visitedInOrder) Color.GREEN else Color.LTGRAY
             canvas.drawCircle(node.posX, node.posY, 50f, paint)
             paint.color = Color.BLACK
             canvas.drawText(id.toString(), node.posX - 20f, node.posY + 15f, paint)
