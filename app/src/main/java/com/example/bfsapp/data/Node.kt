@@ -7,7 +7,7 @@ data class Node(
     val neighbors: MutableList<Int> = mutableListOf()
 )
 
-data class NodeInput (
+data class NodeInput(
     var name: String = "NoName",
     var connections: List<Int> = emptyList()
 )

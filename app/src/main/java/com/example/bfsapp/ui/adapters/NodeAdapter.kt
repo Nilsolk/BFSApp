@@ -4,13 +4,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.widget.addTextChangedListener
+import androidx.core.widget.doOnTextChanged
 import androidx.recyclerview.widget.RecyclerView
-import com.example.bfsapp.R
 import com.example.bfsapp.data.NodeInput
 import com.example.bfsapp.databinding.NodeItemBinding
 
-class NodeAdapter : RecyclerView.Adapter<NodeAdapter.NodeViewHolder>() {
-    private val nodesList = emptyList<NodeInput>()
+class NodeAdapter(private val listener: NodeListener) :
+    RecyclerView.Adapter<NodeAdapter.NodeViewHolder>() {
+    private val nodesList = mutableListOf<NodeInput>()
 
     class NodeViewHolder(val binding: NodeItemBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -20,6 +21,11 @@ class NodeAdapter : RecyclerView.Adapter<NodeAdapter.NodeViewHolder>() {
         )
 
         return NodeViewHolder(binding)
+    }
+
+    fun submitList(list: List<NodeInput>) {
+        nodesList.clear()
+        nodesList.addAll(list)
     }
 
     override fun getItemCount(): Int = nodesList.size
@@ -32,11 +38,12 @@ class NodeAdapter : RecyclerView.Adapter<NodeAdapter.NodeViewHolder>() {
             nodeNameInput.setText(item.name)
             nodeConnectionsInput.setText(item.connections.toString())
 
-            nodeNameInput.addTextChangedListener {
-                item.name = it.toString()
+            nodeNameInput.doOnTextChanged { text, _, _, _ ->
+                listener.onNodeNameChanged(position, text.toString())
             }
-            nodeConnectionsInput.addTextChangedListener {
-                item.connections = it?.split("")?.map { item -> item.toInt() } ?: emptyList()
+            nodeConnectionsInput.doOnTextChanged { text, _, _, _ ->
+                val ids = text?.split(",")?.mapNotNull { it.trim().toIntOrNull() } ?: listOf()
+                listener.onNodeConnectionsChanged(position, ids)
             }
         }
     }
