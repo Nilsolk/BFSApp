@@ -1,9 +1,10 @@
 package com.example.bfsapp.data
+
 class Graph {
     val nodes = mutableMapOf<Int, Node>()
 
-    fun addNode(id: Int, x: Float = 0f, y: Float = 0f) {
-        nodes[id] = Node(id, x, y)
+    fun addNode(id: Int, x: Float = 0f, y: Float = 0f, name: String = "") {
+        nodes[id] = Node(id = id, posX = x, posY = y, name = name )
     }
 
     fun addEdge(from: Int, to: Int) {

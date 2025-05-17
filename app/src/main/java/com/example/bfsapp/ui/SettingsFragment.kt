@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.bfsapp.R
 import com.example.bfsapp.databinding.FragmentSettingsBinding
 import com.example.bfsapp.ui.adapters.NodeAdapter
 import com.example.bfsapp.ui.adapters.NodeListener
@@ -49,8 +50,22 @@ class SettingsFragment : Fragment() {
             adapter.submitList(nodeList.toList())
         })
 
-        binding.buildGraphButton.setOnClickListener {
 
+
+        binding.buildGraphButton.setOnClickListener {
+            val data = Bundle().apply {
+                val arrayList = viewModel.nodes.value?.let { it1 -> ArrayList(it1) }
+                putParcelableArrayList("nodes", arrayList)
+            }
+
+            parentFragmentManager.beginTransaction()
+                .replace(
+                    R.id.containerFragment,
+                    DrawableFragment().apply { arguments = data },
+                    DrawableFragment::class.java.name
+                )
+                .addToBackStack(null)
+                .commit()
         }
     }
 }
