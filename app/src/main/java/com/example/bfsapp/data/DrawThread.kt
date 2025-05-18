@@ -9,6 +9,7 @@ class DrawThread(
 ) : Thread() {
     var running = false
     private val surfaceHolder: SurfaceHolder = graphView.holder
+
     override fun run() {
         while (running) {
             var canvas: Canvas? = null
@@ -16,12 +17,7 @@ class DrawThread(
                 canvas = surfaceHolder.lockCanvas()
                 if (canvas != null) {
                     synchronized(surfaceHolder) {
-                        if (graphView.bfsStepIndex < graphView.bfsSteps.size) {
-                            val nodeId = graphView.bfsSteps[graphView.bfsStepIndex]
-                            graphView.visitedInOrder.add(nodeId)
-                            graphView.bfsStepIndex++
-                        }
-                        graphView.drawGraph(canvas)
+                        graphView.drawGraph(canvas)  // Просто рисуем текущую сцену
                     }
                 }
             } finally {
@@ -29,7 +25,7 @@ class DrawThread(
                     surfaceHolder.unlockCanvasAndPost(canvas)
                 }
             }
-            sleep(500)
+            sleep(16)  // ~60 FPS для плавности
         }
     }
 }

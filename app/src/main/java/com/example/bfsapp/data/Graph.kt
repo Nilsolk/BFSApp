@@ -76,4 +76,30 @@ class Graph {
     fun getLevelGroups(start: Int): Map<Int, List<Int>> {
         return getLevels(start).entries.groupBy({ it.value }, { it.key })
     }
+
+    fun bfsWithParents(start: Int): List<Pair<Int, Int>> {
+        val visited = mutableSetOf<Int>()
+        val queue = ArrayDeque<Int>()
+        val parents = mutableMapOf<Int, Int>()
+
+        queue.add(start)
+        visited.add(start)
+
+        val edgesInOrder = mutableListOf<Pair<Int, Int>>() // ребра обхода
+
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+
+            for (neighbor in nodes[current]?.neighbors ?: listOf()) {
+                if (neighbor !in visited) {
+                    visited.add(neighbor)
+                    queue.add(neighbor)
+                    parents[neighbor] = current
+                    edgesInOrder.add(current to neighbor)  // ребро обхода
+                }
+            }
+        }
+        return edgesInOrder
+    }
+
 }
