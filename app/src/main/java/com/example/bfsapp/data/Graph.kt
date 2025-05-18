@@ -39,7 +39,7 @@ class Graph {
         return order
     }
 
-    fun getLevels(start: Int): Map<Int, Int> {
+    private fun getLevels(start: Int): Map<Int, Int> {
         val levels = mutableMapOf<Int, Int>()
         val queue = ArrayDeque<Pair<Int, Int>>()
         val visited = mutableSetOf<Int>()
@@ -85,7 +85,7 @@ class Graph {
         queue.add(start)
         visited.add(start)
 
-        val edgesInOrder = mutableListOf<Pair<Int, Int>>() // ребра обхода
+        val edgesInOrder = mutableListOf<Pair<Int, Int>>()
 
         while (queue.isNotEmpty()) {
             val current = queue.removeFirst()
@@ -95,11 +95,30 @@ class Graph {
                     visited.add(neighbor)
                     queue.add(neighbor)
                     parents[neighbor] = current
-                    edgesInOrder.add(current to neighbor)  // ребро обхода
+                    edgesInOrder.add(current to neighbor)
                 }
             }
         }
         return edgesInOrder
+    }
+
+    fun layoutTree(startNodeId: Int, width: Float, height: Float) {
+        val levels = getLevels(startNodeId)
+        if (levels.isEmpty()) return
+
+        val groups = levels.entries.groupBy({ it.value }, { it.key })
+        val verticalSpacing = height / (groups.size + 1)
+        val radius = 50f
+
+        groups.forEach { (level, ids) ->
+            val horizontalSpacing = width / (ids.size + 1)
+            ids.forEachIndexed { idx, id ->
+                nodes[id]?.apply {
+                    posX = horizontalSpacing * (idx + 1)
+                    posY = verticalSpacing * (level + 1)
+                }
+            }
+        }
     }
 
 }
