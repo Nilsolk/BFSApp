@@ -19,7 +19,6 @@ class NodeAdapter(private val listener: NodeListener) :
         val binding = NodeItemBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-
         return NodeViewHolder(binding)
     }
 
@@ -35,8 +34,8 @@ class NodeAdapter(private val listener: NodeListener) :
         with(holder.binding) {
             nodeIndex.text = "Вершина $position"
 
-            nodeNameInput.setText(item.name)
-            nodeConnectionsInput.setText(item.connections.toString())
+            nodeNameInput.setText(item.name.ifEmpty { "" })
+            nodeConnectionsInput.setText(item.connections.joinToString(","))
 
             nodeNameInput.doOnTextChanged { text, _, _, _ ->
                 listener.onNodeNameChanged(position, text.toString())

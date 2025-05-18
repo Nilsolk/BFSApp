@@ -1,5 +1,6 @@
 package com.example.bfsapp.ui
 
+import android.os.Build
 import androidx.fragment.app.viewModels
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -20,7 +21,13 @@ class DrawableFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val nodes = arguments?.getParcelableArrayList<NodeInput>("nodes")
+        val nodes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arguments?.getParcelableArrayList("nodes", NodeInput::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            arguments?.getParcelableArrayList("nodes")
+        }
+
         if (nodes != null) {
             viewModel.setNodes(nodes)
         }
@@ -37,11 +44,12 @@ class DrawableFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        var startId = 1
 
         viewModel.nodes.observe(viewLifecycleOwner) { nodeList ->
             val graph = Graph()
 
-            val bfsPositions = layoutByBfs(nodeList, startId = 0)
+            val bfsPositions = layoutByBfs(nodeList, startId = startId)
 
             nodeList.forEachIndexed { index, node ->
                 val (x, y) = bfsPositions[index] ?: (0f to 0f)
@@ -61,36 +69,11 @@ class DrawableFragment : Fragment() {
 }
 
 private fun layoutByBfs(nodes: List<NodeInput>, startId: Int): Map<Int, Pair<Float, Float>> {
-    val graph = Graph()
-    nodes.forEachIndexed { index, _ ->
-        graph.addNode(index, 0f, 0f)
+    val graph = Graph().apply {
+        addNodesFromInput(nodes)
     }
-    nodes.forEachIndexed { index, node ->
-        node.connections.forEach { to ->
-            graph.addEdge(index, to)
-        }
-    }
-
+    val levels = graph.getLevelGroups(startId)
     val positions = mutableMapOf<Int, Pair<Float, Float>>()
-    val visited = mutableSetOf<Int>()
-    val queue = ArrayDeque<Pair<Int, Int>>()
-    val levels = mutableMapOf<Int, MutableList<Int>>()
-
-    queue.add(startId to 0)
-    visited.add(startId)
-
-    while (queue.isNotEmpty()) {
-        val (node, level) = queue.removeFirst()
-        levels.getOrPut(level) { mutableListOf() }.add(node)
-
-        for (neighbor in graph.nodes[node]?.neighbors ?: emptyList()) {
-            if (neighbor !in visited) {
-                visited.add(neighbor)
-                queue.add(neighbor to level + 1)
-            }
-        }
-    }
-
     levels.forEach { (level, ids) ->
         val y = 200f + level * 300f
         val step = 250f
