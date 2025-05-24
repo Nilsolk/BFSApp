@@ -79,7 +79,6 @@ class CustomSurfaceView(context: Context, attrs: AttributeSet) :
             textAlign = Paint.Align.CENTER
         }
 
-        // Рисуем рёбра
         graph?.nodes?.forEach { (_, node) ->
             node.neighbors.forEach { neighborId ->
                 graph?.nodes?.get(neighborId)?.let { neighbor ->
@@ -117,7 +116,6 @@ class CustomSurfaceView(context: Context, attrs: AttributeSet) :
             )
         }
 
-        // Рисуем анимированную стрелку
         paint.color = Color.RED
         paint.strokeWidth = 6f
         paint.style = Paint.Style.FILL

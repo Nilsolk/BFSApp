@@ -33,4 +33,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Построить граф" />
+
+    <Button
+        android:id="@+id/saveGraphButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Сохранить граф" />
+
+    <Button
+        android:id="@+id/loadGraphButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Загрузить граф" />
 </LinearLayout>
