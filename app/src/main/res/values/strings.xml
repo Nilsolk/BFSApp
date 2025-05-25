@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">BFSApp</string>
+    <string name="delete">delete</string>
 </resources>

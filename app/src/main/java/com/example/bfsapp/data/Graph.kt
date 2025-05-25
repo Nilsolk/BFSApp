@@ -108,7 +108,6 @@ class Graph {
 
         val groups = levels.entries.groupBy({ it.value }, { it.key })
         val verticalSpacing = height / (groups.size + 1)
-        val radius = 50f
 
         groups.forEach { (level, ids) ->
             val horizontalSpacing = width / (ids.size + 1)

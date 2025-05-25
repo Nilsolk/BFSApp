@@ -1,8 +1,10 @@
 package com.example.bfsapp.ui
 
+import GraphListAdapter
 import android.app.AlertDialog
 import android.os.Bundle
 import android.view.*
+import android.widget.Toast
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -10,17 +12,21 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.bfsapp.R
+import com.example.bfsapp.databinding.DialogGraphListBinding
 import com.example.bfsapp.databinding.FragmentSettingsBinding
 import com.example.bfsapp.ui.adapters.NodeAdapter
 import com.example.bfsapp.ui.adapters.NodeListener
 import com.example.bfsapp.view_models.SettingsViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SettingsFragment : Fragment() {
 
     private lateinit var binding: FragmentSettingsBinding
     private val viewModel: SettingsViewModel by viewModels()
     private lateinit var adapter: NodeAdapter
+    private lateinit var dlAdapter: GraphListAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -70,32 +76,50 @@ class SettingsFragment : Fragment() {
         }
 
         binding.loadGraphButton.setOnClickListener {
-            lifecycleScope.launch {
-                val graphs = viewModel.getAllGraphs()
-                if (graphs.isEmpty()) {
-                    return@launch
-                }
-
-                val graphNames = graphs.map { it.name }.toTypedArray()
-
-                AlertDialog.Builder(requireContext())
-                    .setTitle("Выберите граф")
-                    .setItems(graphNames) { dialog, which ->
-                        viewModel.loadGraph(graphs[which].id)
-                    }
-                    .setNegativeButton("Отмена", null)
-                    .setNeutralButton("Удалить") { dialog, _ ->
-                        AlertDialog.Builder(requireContext())
-                            .setTitle("Выберите граф для удаления")
-                            .setItems(graphNames) { _, deleteIndex ->
-                                val graphToDelete = graphs[deleteIndex]
-                                viewModel.deleteGraph(graphToDelete.id)
-                            }
-                            .setNegativeButton("Отмена", null)
-                            .show()
-                    }
-                    .show()
-            }
+            showGraphDialog()
         }
     }
+
+    private fun showGraphDialog() {
+        lifecycleScope.launch {
+            val graphs = viewModel.getAllGraphs()
+            if (graphs.isEmpty()) {
+                Toast.makeText(requireContext(), "Нет сохранённых графов", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            }
+
+            val dlgBinding = DialogGraphListBinding.inflate(layoutInflater, null, false)
+            val dlg = AlertDialog.Builder(requireContext())
+                .setView(dlgBinding.root)
+                .create()
+
+            dlAdapter = GraphListAdapter(
+                graphs,
+                onItemClick = { graph ->
+                    viewModel.loadGraph(graph.id)
+                    dlg.dismiss()
+                },
+                onDeleteClick = { graph ->
+                    viewModel.deleteGraph(graph.id)
+                    lifecycleScope.launch {
+                        val updated = viewModel.getAllGraphs()
+                        withContext(Dispatchers.Main) {
+                            dlAdapter.update(updated)
+                        }
+                    }
+                }
+            )
+
+            dlgBinding.graphList.apply {
+                layoutManager = LinearLayoutManager(requireContext())
+                adapter = dlAdapter
+            }
+
+            dlgBinding.closeButton.setOnClickListener { dlg.dismiss() }
+            dlg.show()
+        }
+    }
+
+
 }
