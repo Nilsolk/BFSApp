@@ -3,6 +3,8 @@ package com.example.bfsapp.ui
 import GraphListAdapter
 import android.app.AlertDialog
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.*
 import android.widget.Toast
 import androidx.core.widget.doOnTextChanged
@@ -18,6 +20,7 @@ import com.example.bfsapp.ui.adapters.NodeAdapter
 import com.example.bfsapp.ui.adapters.NodeListener
 import com.example.bfsapp.view_models.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -27,6 +30,7 @@ class SettingsFragment : Fragment() {
     private val viewModel: SettingsViewModel by viewModels()
     private lateinit var adapter: NodeAdapter
     private lateinit var dlAdapter: GraphListAdapter
+    private var internalChange = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,18 +50,28 @@ class SettingsFragment : Fragment() {
                 viewModel.updateNodeConnections(position, connections)
             }
         })
+        viewModel.insertPresetsIfNeeded()
 
         binding.nodeRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.nodeRecyclerView.adapter = adapter
 
-        binding.nodeCountInput.doOnTextChanged { text, _, _, _ ->
-            val count = text?.toString()?.toIntOrNull() ?: return@doOnTextChanged
-            viewModel.setNodeCount(count)
-        }
-
-        viewModel.nodes.observe(viewLifecycleOwner, Observer { nodeList ->
-            adapter.submitList(nodeList.toList())
+        binding.nodeCountInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (internalChange) return
+                val count = s?.toString()?.toIntOrNull() ?: return
+                viewModel.setNodeCount(count)
+            }
         })
+
+        viewModel.nodes.observe(viewLifecycleOwner) { nodeList ->
+            adapter.submitList(nodeList.toList())
+
+            internalChange = true
+            binding.nodeCountInput.setText(nodeList.size.toString())
+            internalChange = false
+        }
 
         binding.buildGraphButton.setOnClickListener {
             val data = Bundle().apply {
