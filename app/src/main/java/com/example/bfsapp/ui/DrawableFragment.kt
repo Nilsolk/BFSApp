@@ -3,6 +3,7 @@ package com.example.bfsapp.ui
 import android.os.Build
 import androidx.fragment.app.viewModels
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -44,8 +45,7 @@ class DrawableFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        var startId = 1
-
+        var startId = 0
         viewModel.nodes.observe(viewLifecycleOwner) { nodeList ->
             val graph = Graph()
 
@@ -63,7 +63,11 @@ class DrawableFragment : Fragment() {
             }
 
             binding.customSurfaceView.setGraph(graph)
-            binding.customSurfaceView.startBfsAnimation(startNodeId = 0)
+            Log.d("DrawableFragment", "Graph set, nodes = ${nodeList.size}")
+            binding.customSurfaceView.post {
+                Log.d("DrawableFragment", "Posting startBfsAnimation")
+                binding.customSurfaceView.startBfsAnimation(startNodeId = startId)
+            }
         }
     }
 }

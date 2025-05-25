@@ -10,6 +10,7 @@ import com.example.bfsapp.data.Graph
 import kotlinx.coroutines.*
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.sin
 
 
@@ -22,6 +23,7 @@ class CustomSurfaceView(context: Context, attrs: AttributeSet) :
     internal var currentEdgeIndex = 0
     internal var arrowX = 0f
     internal var arrowY = 0f
+    internal var bfsEdges = emptyList<Pair<Int,Int>>()
 
     private lateinit var drawThread: DrawThread
 
@@ -31,6 +33,9 @@ class CustomSurfaceView(context: Context, attrs: AttributeSet) :
 
     fun setGraph(graph: Graph) {
         this.graph = graph
+        val startId = graph.nodes.keys.firstOrNull() ?: return
+        graph.layoutTree(startId, width.toFloat(), height.toFloat())
+        draw()
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -71,64 +76,92 @@ class CustomSurfaceView(context: Context, attrs: AttributeSet) :
     internal fun drawGraph(canvas: Canvas) {
         canvas.drawColor(Color.WHITE)
 
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.BLACK
+        val edgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             strokeWidth = 4f
-            textSize = 40f
             style = Paint.Style.STROKE
-            textAlign = Paint.Align.CENTER
         }
+        graph?.let { g ->
+            g.nodes.forEach { (_, node) ->
+                node.neighbors.forEach { nbrId ->
+                    g.nodes[nbrId]?.let { neighbor ->
+                        val dx = neighbor.posX - node.posX
+                        val dy = neighbor.posY - node.posY
+                        val dist = hypot(dx, dy)
+                        if (dist > radius) {
+                            val sx = node.posX + dx / dist * radius
+                            val sy = node.posY + dy / dist * radius
+                            val ex = neighbor.posX - dx / dist * radius
+                            val ey = neighbor.posY - dy / dist * radius
 
-        graph?.nodes?.forEach { (_, node) ->
-            node.neighbors.forEach { neighborId ->
-                graph?.nodes?.get(neighborId)?.let { neighbor ->
-                    val dx = neighbor.posX - node.posX
-                    val dy = neighbor.posY - node.posY
-                    val dist = kotlin.math.hypot(dx, dy)
-                    if (dist > radius) {
-                        val startX = node.posX + dx / dist * radius
-                        val startY = node.posY + dy / dist * radius
-                        val endX = neighbor.posX - dx / dist * radius
-                        val endY = neighbor.posY - dy / dist * radius
-                        canvas.drawLine(startX, startY, endX, endY, paint)
+                            val idx = bfsEdges.indexOfFirst { it.first == node.id && it.second == nbrId }
+                            edgePaint.color = if (idx == currentEdgeIndex) Color.RED else Color.BLACK
+
+                            canvas.drawLine(sx, sy, ex, ey, edgePaint)
+                        }
                     }
                 }
             }
         }
 
-        val visitedSet = bfsOrder.toSet()
 
-        paint.style = Paint.Style.FILL
+        if (currentEdgeIndex in bfsEdges.indices) {
+            val (from, to) = bfsEdges[currentEdgeIndex]
+            graph?.nodes?.get(from)?.let { fromNode ->
+                val arrowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.RED
+                    strokeWidth = 6f
+                    style = Paint.Style.FILL_AND_STROKE
+                }
+
+                canvas.drawLine(fromNode.posX, fromNode.posY, arrowX, arrowY, arrowPaint)
+                drawArrow(canvas, arrowPaint, fromNode.posX, fromNode.posY, arrowX, arrowY)
+            }
+        }
+
+        val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            textSize = 40f
+            textAlign = Paint.Align.CENTER
+        }
+        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            color = Color.BLACK
+            strokeWidth = 4f
+        }
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textSize = 40f
+            textAlign = Paint.Align.CENTER
+        }
+
         graph?.nodes?.forEach { (id, node) ->
-            paint.color = if (id in visitedSet) Color.GREEN else Color.LTGRAY
-            canvas.drawCircle(node.posX, node.posY, radius, paint)
-
-            paint.color = Color.BLACK
-            paint.style = Paint.Style.STROKE
-            canvas.drawCircle(node.posX, node.posY, radius, paint)
-
-            paint.style = Paint.Style.FILL
+            nodePaint.color = if (id in bfsOrder) Color.GREEN else Color.LTGRAY
+            canvas.drawCircle(node.posX, node.posY, radius, nodePaint)
+            canvas.drawCircle(node.posX, node.posY, radius, borderPaint)
+            nodePaint.style = Paint.Style.FILL
             canvas.drawText(
                 node.name.ifEmpty { id.toString() },
                 node.posX,
                 node.posY - radius - textOffsetY,
-                paint
+                textPaint
             )
         }
 
-        paint.color = Color.RED
-        paint.strokeWidth = 6f
-        paint.style = Paint.Style.FILL
-
-        if (currentEdgeIndex < (graph?.bfsWithParents(bfsOrder.firstOrNull() ?: -1)?.size ?: 0)) {
-            val fromId = graph?.bfsWithParents(bfsOrder.firstOrNull() ?: -1)?.get(currentEdgeIndex)?.first ?: -1
-            graph?.nodes?.get(fromId)?.let {
-                drawArrow(canvas, paint, it.posX, it.posY, arrowX, arrowY)
+        if (currentEdgeIndex in bfsEdges.indices) {
+            val targetId = bfsEdges[currentEdgeIndex].second
+            graph?.nodes?.get(targetId)?.let { target ->
+                val smallRadius = radius / 2f
+                val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.RED
+                    style = Paint.Style.FILL
+                }
+                canvas.drawCircle(target.posX, target.posY, smallRadius, highlightPaint)
             }
-        } else {
-            canvas.drawCircle(arrowX, arrowY, 30f, paint)
         }
     }
+
+
+
 
     private fun drawArrow(canvas: Canvas, paint: Paint, startX: Float, startY: Float, currentX: Float, currentY: Float) {
         val dx = currentX - startX

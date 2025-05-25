@@ -12,45 +12,46 @@ class DrawThread(
 
     fun startBfs(startId: Int) {
         val graph = surfaceView.graph ?: return
-        val bfsOrder = graph.bfs(startId)
         val bfsEdges = graph.bfsWithParents(startId)
         if (bfsEdges.isEmpty()) return
 
-        val startNode = graph.nodes[startId] ?: return
-        surfaceView.arrowX = startNode.posX
-        surfaceView.arrowY = startNode.posY
+
+        surfaceView.bfsOrder = listOf(startId)
+        surfaceView.bfsEdges = bfsEdges
         surfaceView.currentEdgeIndex = 0
-        surfaceView.bfsOrder = bfsOrder
+
+
+        graph.nodes[startId]?.let {
+            surfaceView.arrowX = it.posX
+            surfaceView.arrowY = it.posY
+        }
 
         animJob?.cancel()
-
         animJob = scope.launch {
-            for (i in bfsOrder.indices) {
-                surfaceView.bfsOrder = bfsOrder.subList(0, i + 1)
-                surfaceView.draw()
-                delay(200L)
-            }
 
-                for ((from, to) in bfsEdges) {
-                val fromNode = graph.nodes[from] ?: continue
-                val toNode = graph.nodes[to] ?: continue
+            for ((edgeIndex, edge) in bfsEdges.withIndex()) {
+                val (from, to) = edge
+                val n1 = graph.nodes[from]!!
+                val n2 = graph.nodes[to]!!
 
                 val steps = 30
-                for (step in 0..steps) {
+                repeat(steps + 1) { step ->
                     val t = step / steps.toFloat()
-                    surfaceView.arrowX = lerp(fromNode.posX, toNode.posX, t)
-                    surfaceView.arrowY = lerp(fromNode.posY, toNode.posY, t)
-                    surfaceView.currentEdgeIndex++
+                    surfaceView.arrowX = lerp(n1.posX, n2.posX, t)
+                    surfaceView.arrowY = lerp(n1.posY, n2.posY, t)
+                    surfaceView.currentEdgeIndex = edgeIndex
                     surfaceView.draw()
                     delay(30L)
                 }
-            }
 
-            val lastNode = graph.nodes[bfsEdges.last().second]
-            if (lastNode != null) {
-                surfaceView.arrowX = lastNode.posX
-                surfaceView.arrowY = lastNode.posY
+
+                val visited = surfaceView.bfsOrder.toMutableList()
+                visited.add(to)
+                surfaceView.bfsOrder = visited
                 surfaceView.draw()
+
+
+                delay(200L)
             }
         }
     }
